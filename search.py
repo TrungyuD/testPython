@@ -72,6 +72,38 @@ def tinyMazeSearch(problem):
     w = Directions.WEST
     return  [s, s, w, s, w, w, s, w]
 
+def generalSearch(problem, fringe, heuristic=None):
+  visited = [] #List các node đã được thăm
+  list_act = [] #List các hành động được thực hiện để đến nút hiện tại
+  init = problem.getStartState() #Trạng thái bắt đầu của problem
+
+  if isinstance(fringe,util.Stack) or isinstance(fringe,util.Queue):
+    fringe.push((init,list_act))
+  elif isinstance(fringe,util.PriorityQueue):
+    fringe.push((init,list_act), heuristic(init,problem))
+
+  while fringe:
+    if isinstance(fringe,util.Stack) or isinstance(fringe,util.Queue):
+      node, acts = fringe.pop()
+    elif isinstance(fringe,util.PriorityQueue):
+        node, acts = fringe.pop()
+    if not node in visited:
+      visited.append(node)
+      if problem.isGoalState(node):
+        return acts
+      successors = problem.getSuccessors(node)
+      for success in successors:
+        coordinate, direction, cost = success
+        newActions = acts + [direction]
+        if isinstance(fringe, util.Stack) or isinstance(fringe, util.Queue):
+            fringe.push((coordinate, newActions))
+        elif isinstance(fringe, util.PriorityQueue):
+            newCost = problem.getCostOfActions(newActions) + \
+                      heuristic(coordinate, problem)
+            fringe.push((coordinate, newActions), newCost)
+
+  return []
+
 def depthFirstSearch(problem):
     """
     Search the deepest nodes in the search tree first.
@@ -87,17 +119,21 @@ def depthFirstSearch(problem):
     print "Start's successors:", problem.getSuccessors(problem.getStartState())
     """
     "*** YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    # print ("Start:", problem.getStartState())
+    # print ("Is the start a goal?", problem.isGoalState(problem.getStartState()))
+    # print ("Start's successors:", problem.getSuccessors(problem.getStartState()))
+
+    return generalSearch(problem, util.Stack())
 
 def breadthFirstSearch(problem):
     """Search the shallowest nodes in the search tree first."""
     "*** YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    return generalSearch(problem, util.Queue())
 
 def uniformCostSearch(problem):
     """Search the node of least total cost first."""
     "*** YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    return aStarSearch(problem)
 
 def nullHeuristic(state, problem=None):
     """
@@ -109,8 +145,7 @@ def nullHeuristic(state, problem=None):
 def aStarSearch(problem, heuristic=nullHeuristic):
     """Search the node that has the lowest combined cost and heuristic first."""
     "*** YOUR CODE HERE ***"
-    util.raiseNotDefined()
-
+    return generalSearch(problem, util.PriorityQueue(), heuristic)
 
 # Abbreviations
 bfs = breadthFirstSearch
