@@ -73,9 +73,10 @@ def tinyMazeSearch(problem):
     return  [s, s, w, s, w, w, s, w]
 
 def generalSearch(problem, fringe, heuristic=None):
-  visited = [] #List các node đã được thăm
-  list_act = [] #List các hành động được thực hiện để đến nút hiện tại
-  init = problem.getStartState() #Trạng thái bắt đầu của problem
+  
+  visited = []  
+  list_act = []   
+  init = problem.getStartState() 
 
   if isinstance(fringe,util.Stack) or isinstance(fringe,util.Queue):
     fringe.push((init,list_act))
