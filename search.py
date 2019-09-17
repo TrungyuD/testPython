@@ -99,8 +99,7 @@ def generalSearch(problem, fringe, heuristic=None):
         if isinstance(fringe, util.Stack) or isinstance(fringe, util.Queue):
             fringe.push((coordinate, newActions))
         elif isinstance(fringe, util.PriorityQueue):
-            newCost = problem.getCostOfActions(newActions) + \
-                      heuristic(coordinate, problem)
+            newCost = problem.getCostOfActions(newActions) + heuristic(coordinate, problem)
             fringe.push((coordinate, newActions), newCost)
 
   return []

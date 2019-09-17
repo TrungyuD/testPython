@@ -4,7 +4,7 @@
 # educational purposes provided that (1) you do not distribute or publish
 # solutions, (2) you retain this notice, and (3) you provide clear
 # attribution to UC Berkeley, including a link to http://ai.berkeley.edu.
-# 
+#
 # Attribution Information: The Pacman AI projects were developed at UC Berkeley.
 # The core projects and autograders were primarily created by John DeNero
 # (denero@cs.berkeley.edu) and Dan Klein (klein@cs.berkeley.edu).
@@ -295,8 +295,8 @@ class CornersProblem(search.SearchProblem):
         space)
         """
         "*** YOUR CODE HERE ***"
-        visited = []
-        return(self.startingPosition,visited)
+        visted = []
+        return (self.startingPosition, visted)
 
     def isGoalState(self, state):
         """
@@ -317,7 +317,7 @@ class CornersProblem(search.SearchProblem):
         """
 
         successors = []
-        currentPosition = state [0]
+        currentPosition = state[0]
         foundCorners = state[1]
         bottom, left, top, right = 1, 1, self.walls.height - 2, self.walls.width - 2
         for action in [Directions.NORTH, Directions.SOUTH, Directions.EAST, Directions.WEST]:
@@ -330,9 +330,12 @@ class CornersProblem(search.SearchProblem):
 
             "*** YOUR CODE HERE ***"
             if not hitsWall:
-                if (nextx, nexty) in self.corners and (nextx,nexty) not in foundCorners:
-                    visited = foundCorners + [(nextx,nexty)]
-                    successors.append((((nextx,nexty),visited),action,1))
+                if (nextx, nexty) in self.corners and (nextx, nexty) not in foundCorners:
+                    visited = foundCorners + [(nextx, nexty)]
+                    successors.append((((nextx, nexty), visited), action, 1))
+                else:
+                    successors.append((((nextx, nexty), foundCorners), action, 1))
+
         self._expanded += 1 # DO NOT CHANGE
         return successors
 
@@ -365,16 +368,24 @@ def cornersHeuristic(state, problem):
     """
     corners = problem.corners # These are the corner coordinates
     walls = problem.walls # These are the walls of the maze, as a Grid (game.py)
-    unvisited = []
-    visited = state[1]
-    node = state[0]
+    unvisited = []  # Hold unvisited corners
+    visited = state[1]  # Visited corners
+    node = state[0]  # Current node
     heuristic = 0
     "*** YOUR CODE HERE ***"
-    # return 0 # Default to trivial solution
+    # Find all the corners that we haven't visited yet, and append them to a
+    # list so we can go through them
     for corner in corners:
         if not corner in visited:
             unvisited.append(corner)
-    
+
+    # Find the sum of the shortest distances between the unvisited corners. Use
+    # this as the heuristic because it is consistent (will always choose the
+    # same corners for a given situation). It solves the simpler problem where
+    # we find the number of moves when all of the walls have been removed. The
+    # heuristic will return 0 at a goal state since the minimum distance to a
+    # corner when in a corner is 0, and will never return a negative since
+    # mangattanDistance can never be negative.
     while unvisited:
         distance, corner = min([(util.manhattanDistance(node, corner), corner) \
                                 for corner in unvisited])
@@ -383,6 +394,7 @@ def cornersHeuristic(state, problem):
         unvisited.remove(corner)
 
     return heuristic
+
 class AStarCornersAgent(SearchAgent):
     "A SearchAgent for FoodSearchProblem using A* and your foodHeuristic"
     def __init__(self):
@@ -448,34 +460,45 @@ class AStarFoodSearchAgent(SearchAgent):
 def foodHeuristic(state, problem):
     """
     Your heuristic for the FoodSearchProblem goes here.
-
-    This heuristic must be consistent to ensure correctness.  First, try to come
-    up with an admissible heuristic; almost all admissible heuristics will be
-    consistent as well.
-
+    This heuristic must be consistent to ensure correctness.  First, try to come up
+    with an admissible heuristic; almost all admissible heuristics will be consistent
+    as well.
     If using A* ever finds a solution that is worse uniform cost search finds,
-    your heuristic is *not* consistent, and probably not admissible!  On the
-    other hand, inadmissible or inconsistent heuristics may find optimal
-    solutions, so be careful.
-
-    The state is a tuple ( pacmanPosition, foodGrid ) where foodGrid is a Grid
-    (see game.py) of either True or False. You can call foodGrid.asList() to get
-    a list of food coordinates instead.
-
-    If you want access to info like walls, capsules, etc., you can query the
-    problem.  For example, problem.walls gives you a Grid of where the walls
-    are.
-
-    If you want to *store* information to be reused in other calls to the
-    heuristic, there is a dictionary called problem.heuristicInfo that you can
-    use. For example, if you only want to count the walls once and store that
-    value, try: problem.heuristicInfo['wallCount'] = problem.walls.count()
-    Subsequent calls to this heuristic can access
-    problem.heuristicInfo['wallCount']
+    your heuristic is *not* consistent, and probably not admissible!  On the other hand,
+    inadmissible or inconsistent heuristics may find optimal solutions, so be careful.
+    The state is a tuple ( pacmanPosition, foodGrid ) where foodGrid is a
+    Grid (see game.py) of either True or False. You can call foodGrid.asList()
+    to get a list of food coordinates instead.
+    If you want access to info like walls, capsules, etc., you can query the problem.
+    For example, problem.walls gives you a Grid of where the walls are.
+    If you want to *store* information to be reused in other calls to the heuristic,
+    there is a dictionary called problem.heuristicInfo that you can use. For example,
+    if you only want to count the walls once and store that value, try:
+      problem.heuristicInfo['wallCount'] = problem.walls.count()
+    Subsequent calls to this heuristic can access problem.heuristicInfo['wallCount']
     """
     position, foodGrid = state
-    "*** YOUR CODE HERE ***"
-    return 0
+    heuristic = 0
+    food = foodGrid.asList()
+
+    # If there isn't any food, then there isn't a problem to solve
+    if len(food) == 0:
+        return 0
+
+    # Take advantage of the given maze-distance function to determine the
+    # heuristic. Takes an incredibly long time (~40s!), but expands only
+    # 4137 nodes. This heuristic is consistent, because the maze distance
+    # will always find the same distance to a given piece of food. This solves
+    # the simpler problem of finding the distance to the farthest piece of food.
+    # Heursitic will also return 0 at a goal (since if pacman has eaten all of
+    # the food then the distance to the nearest food will be the one pacman is
+    # currently on), and will never return a negative (since distances can't be
+    # negative)
+    for food in food:
+        distance = mazeDistance(position, food, problem.startingGameState)
+        if distance > heuristic:
+            heuristic = distance
+    return heuristic
 
 class ClosestDotSearchAgent(SearchAgent):
     "Search for all food using a sequence of searches"
@@ -495,18 +518,41 @@ class ClosestDotSearchAgent(SearchAgent):
         print 'Path found with cost %d.' % len(self.actions)
 
     def findPathToClosestDot(self, gameState):
-        """
-        Returns a path (a list of actions) to the closest dot, starting from
-        gameState.
-        """
+        "Returns a path (a list of actions) to the closest dot, starting from gameState"
         # Here are some useful elements of the startState
         startPosition = gameState.getPacmanPosition()
         food = gameState.getFood()
         walls = gameState.getWalls()
         problem = AnyFoodSearchProblem(gameState)
 
-        "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        """
+        Does not always find the shortest path through the maze, because the
+        closest food might not be on the path of the shortest path through them
+        maze. For example, if there are two dots to choose from, the algorithm
+        may pick one arbitratily, which could leave the other food as the only
+        food left in that area of the maze. Then, Pacman will eat everything 
+        else before finally returning to eat that food.
+        """
+
+        # Perform a BFS to find the closest dot.
+        fringe = util.Queue()
+        visited = []        # List of already visited nodes
+        action_list = []    # List of actions taken to get to the current node
+        total_cost = 0      # Cost to get to the current node
+        initial = problem.getStartState()   # Starting state of the problem
+
+        fringe.push((initial, action_list))
+
+        while fringe:
+            node, actions = fringe.pop()
+            if not node in visited:
+                visited.append(node)
+                if problem.isGoalState(node):
+                    return actions
+                successors = problem.getSuccessors(node)
+                for successor in successors:
+                    coordinate, direction, cost = successor
+                    fringe.push((coordinate, actions + [direction]))
 
 class AnyFoodSearchProblem(PositionSearchProblem):
     """
@@ -536,13 +582,16 @@ class AnyFoodSearchProblem(PositionSearchProblem):
 
     def isGoalState(self, state):
         """
-        The state is Pacman's position. Fill this in with a goal test that will
-        complete the problem definition.
+        The state is Pacman's position. Fill this in with a goal test
+        that will complete the problem definition.
         """
         x,y = state
+        foodPositions = self.food.asList()
 
-        "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        # The goal is if pacman's current position is a location where there is
+        # a piece of food.
+        return (x, y) in foodPositions
+
 
 def mazeDistance(point1, point2, gameState):
     """
